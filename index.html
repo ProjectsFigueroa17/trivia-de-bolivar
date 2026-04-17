@@ -21,21 +21,13 @@
         .correcto { background-color: var(--exito) !important; color: white; border-color: #27ae60; }
         .incorrecto { background-color: var(--error) !important; color: white; border-color: #c0392b; }
         .btn-accion { padding: 12px 30px; background: var(--acento); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; max-width: 250px; }
-        .btn-accion:disabled { opacity: 0.5; cursor: not-allowed; }
-        input { padding: 12px; width: 100%; border-radius: 10px; border: 2px solid #ddd; margin-bottom: 15px; box-sizing: border-box; font-size: 1rem; }
-        .tabla-contenedor { max-height: 200px; overflow-y: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: var(--primario); color: white; padding: 8px; font-size: 0.8rem; position: sticky; top: 0; }
-        td { padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
         .oculto { display: none; }
         .bloqueado { pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div class="cintillo">
-    <img src="iutirla.jpg" alt="IUTIRLA" onerror="this.style.display='none'">
-</div>
+<div class="cintillo"><img src="iutirla.jpg" onerror="this.style.display='none'"></div>
 
 <div id="quiz-container">
     <div id="pantalla-inicio">
@@ -44,8 +36,8 @@
             <img src="portada.jpg" class="img-trivia" onerror="this.src='https://placeholder.com'">
         </div>
         <p>Ingresa tu nombre para comenzar:</p>
-        <input type="text" id="nombre-usuario" placeholder="Nombre y Apellido">
-        <button class="btn-accion" id="btn-comenzar" onclick="empezarJuego()" disabled>Cargando...</button>
+        <input type="text" id="nombre-usuario" placeholder="Nombre y Apellido" style="padding: 12px; width: 100%; border-radius: 10px; border: 2px solid #ddd; margin-bottom: 15px; box-sizing: border-box;">
+        <button class="btn-accion" id="btn-comenzar" onclick="empezarJuego()">¡Comenzar!</button>
     </div>
 
     <div id="juego" class="oculto">
@@ -59,8 +51,8 @@
         <h3>🏆 Ranking Global (Top 4)</h3>
         <p id="resultado-final" style="font-size: 1.5rem; color: var(--primario); font-weight: bold; margin: 5px 0;"></p>
         <div class="tabla-contenedor">
-            <table>
-                <thead><tr><th>#</th><th>Jugador</th><th>Pts</th></tr></thead>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead><tr style="background: var(--primario); color: white;"><th>#</th><th>Jugador</th><th>Pts</th></tr></thead>
                 <tbody id="lista-ranking"></tbody>
             </table>
         </div>
@@ -74,7 +66,7 @@
     const firebaseConfig = {
         apiKey: "AIzaSyCyRgck7A2wAoWEd8WrkI1HUOv4rjubSWo",
         authDomain: "://firebaseapp.com",
-        databaseURL: "https://trivia-bolivar-default-rtdb.firebaseio.com/",
+        databaseURL: "https://firebaseio.com",
         projectId: "trivia-bolivar",
         storageBucket: "trivia-bolivar.firebasestorage.app",
         messagingSenderId: "1046239380884",
@@ -82,10 +74,16 @@
     };
 
     let db;
-    let preguntas = [];
-    let indice = 0, puntaje = 0, nombreGlobal = "";
+    try {
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        }
+    } catch (e) {
+        console.error("Firebase no disponible:", e);
+    }
 
-    
+    // 2. BANCO DE PREGUNTAS
     const banco = [
         { q: "¿Cuál es la caída de agua más alta del mundo ubicada en Canaima?", options: ["Salto Kukenán", "Salto Ángel", "Salto La Llovizna"], correct: "Salto Ángel", img: "angel.jpg" },
         { q: "¿En qué ciudad se encuentra el imponente Parque Cachamay?", options: ["Ciudad Bolívar", "Upata", "Ciudad Guayana"], correct: "Ciudad Guayana", img: "cachamay.jpg" },
@@ -109,30 +107,21 @@
         { q: "¿Qué parque de Pto. Ordaz es un zoológico de fauna regional?", options: ["Parque La Navidad", "Parque Loefling", "Parque La Fundación"], correct: "Parque Loefling", img: "loefling.jpg" }
     ];
 
-    
-    window.onload = function() {
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            document.getElementById("btn-comenzar").disabled = false;
-            document.getElementById("btn-comenzar").innerText = "¡Comenzar!";
-        } catch (e) {
-            console.error("Error cargando Firebase:", e);
-        }
-    };
+    let preguntas = [];
+    let indice = 0, puntaje = 0, nombreJugador = "";
 
-    function barajar(array) {
-        let m = [...array];
-        for (let i = m.length - 1; i > 0; i--) {
+    function barajar(arr) {
+        let n = [...arr];
+        for (let i = n.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [m[i], m[j]] = [m[j], m[i]];
+            [n[i], n[j]] = [n[j], n[i]];
         }
-        return m;
+        return n;
     }
 
     function empezarJuego() {
-        nombreGlobal = document.getElementById("nombre-usuario").value.trim();
-        if (!nombreGlobal) return alert("¡Ingresa tu nombre!");
+        nombreJugador = document.getElementById("nombre-usuario").value.trim();
+        if (!nombreJugador) return alert("¡Ingresa tu nombre!");
         
         preguntas = barajar(banco);
         preguntas.forEach(p => p.options = barajar(p.options));
@@ -146,7 +135,7 @@
         const p = preguntas[indice];
         document.getElementById("num-pregunta").innerText = `PREGUNTA ${indice + 1} / ${preguntas.length}`;
         document.getElementById("enunciado").innerText = p.q;
-        document.getElementById("contenedor-foto").innerHTML = `<img src="${p.img}" class="img-trivia" onerror="this.src='https://placeholder.com'">`;
+        document.getElementById("contenedor-foto").innerHTML = `<img src="${p.img}" class="img-trivia" onerror="this.src='https://placeholder.com...'">`;
         
         const lista = document.getElementById("opciones-lista");
         lista.innerHTML = "";
@@ -171,7 +160,7 @@
                     indice++;
                     if(indice < preguntas.length) mostrarPregunta();
                     else finalizar();
-                }, 1000);
+                }, 800);
             };
             lista.appendChild(btn);
         });
@@ -181,15 +170,14 @@
         document.getElementById("juego").classList.add("oculto");
         document.getElementById("pantalla-final").classList.remove("oculto");
         document.getElementById("resultado-final").innerText = puntaje + " Puntos";
-        if(db) db.ref('ranking').push({ nombre: nombreGlobal, pts: puntaje, fecha: Date.now() });
+        if(db) db.ref('ranking').push({ nombre: nombreJugador, pts: puntaje, fecha: Date.now() });
         cargarRanking();
     }
 
     function cargarRanking() {
         if(!db) return;
         db.ref('ranking').orderByChild('pts').limitToLast(10).on('value', s => {
-            let arr = [];
-            s.forEach(child => { arr.push(child.val()); });
+            let arr = []; s.forEach(child => { arr.push(child.val()); });
             arr.sort((a,b) => b.pts - a.pts);
             document.getElementById("lista-ranking").innerHTML = arr.map((r, i) => 
                 `<tr><td>${i+1}</td><td>${r.nombre}</td><td>${r.pts}</td></tr>`).join("");
