@@ -70,7 +70,13 @@
 
 <script>
     
-    window.onload = function() {
+    function iniciarApp() {
+        if (typeof firebase === 'undefined') {
+            console.error("Firebase sigue sin cargar. Revisa tu conexión a internet.");
+            alert("Error de conexión con el servidor. Reintenta en unos segundos.");
+            return;
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyCyRgck7A2wAoWEd8WrkI1HUOv4rjubSWo",
             authDomain: "://firebaseapp.com",
@@ -81,7 +87,6 @@
             appId: "1:1046239380884:web:596a91edb4f22358957b81"
         };
 
-        
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -122,10 +127,9 @@
             return n;
         }
 
-        
         document.getElementById("btn-comenzar").onclick = function() {
             nombreGlobal = document.getElementById("nombre-usuario").value.trim();
-            if (!nombreGlobal) return alert("¡Ingresa tu nombre!");
+            if (!nombreGlobal) return alert("¡Dinos tu nombre!");
 
             preguntasMezcladas = mezclar(bancoPreguntas);
             preguntasMezcladas.forEach(p => p.options = mezclar(p.options));
@@ -185,7 +189,10 @@
                     `<tr><td>${i+1}</td><td>${r.nombre}</td><td>${r.pts}</td></tr>`).join("");
             });
         }
-    };
+    }
+
+    
+    window.addEventListener('load', iniciarApp);
 </script>
 </body>
 </html>
