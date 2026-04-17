@@ -145,6 +145,7 @@
 </div>
 
 <script>
+    
     const firebaseConfig = {
         apiKey: "AIzaSyCyRgck7A2wAoWEd8WrkI1HUOv4rjubSWo",
         authDomain: "://firebaseapp.com",
@@ -181,8 +182,11 @@
         { q: "¿Qué parque de Pto. Ordaz es un zoológico de fauna regional?", options: ["Parque La Navidad", "Parque Loefling", "Parque La Fundación"], correct: "Parque Loefling", img: "loefling.jpg" }
     ];
 
-    let preguntas = [];
-    let indice = 0, puntaje = 0, nombre = "";
+    
+    let preguntasMezcladas = [];
+    let indiceActual = 0;
+    let puntajeTotal = 0;
+    let nombreUsuario = "";
 
     
     function barajar(array) {
@@ -194,12 +198,12 @@
     }
 
     function empezarJuego() {
-        nombre = document.getElementById("nombre-usuario").value.trim();
-        if (!nombre) return alert("¡Dinos tu nombre!");
+        nombreUsuario = document.getElementById("nombre-usuario").value.trim();
+        if (!nombreUsuario) return alert("¡Dinos tu nombre!");
 
         
-        preguntas = barajar([...bancoPreguntas]);
-        preguntas.forEach(p => p.options = barajar([...p.options]));
+        preguntasMezcladas = barajar([...bancoPreguntas]);
+        preguntasMezcladas.forEach(p => p.options = barajar([...p.options]));
 
         document.getElementById("pantalla-inicio").classList.add("oculto");
         document.getElementById("juego").classList.remove("oculto");
@@ -207,10 +211,10 @@
     }
 
     function mostrarPregunta() {
-        const p = preguntas[indice];
-        document.getElementById("num-pregunta").innerText = `PREGUNTA ${indice + 1} / ${preguntas.length}`;
+        const p = preguntasMezcladas[indiceActual];
+        document.getElementById("num-pregunta").innerText = `PREGUNTA ${indiceActual + 1} / ${preguntasMezcladas.length}`;
         document.getElementById("enunciado").innerText = p.q;
-        document.getElementById("contenedor-foto").innerHTML = `<img src="${p.img}" class="img-trivia" onerror="this.src='https://via.placeholder.com/400x220?text=Cargando...'">`;
+        document.getElementById("contenedor-foto").innerHTML = `<img src="${p.img}" class="img-trivia" onerror="this.src='https://placeholder.com'">`;
         
         const lista = document.getElementById("opciones-lista");
         lista.innerHTML = "";
@@ -223,7 +227,7 @@
                 lista.classList.add("bloqueado");
                 if(opt === p.correct) { 
                     b.classList.add("correcto"); 
-                    puntaje++; 
+                    puntajeTotal += 100; 
                 } else { 
                     b.classList.add("incorrecto");
                     
@@ -232,9 +236,13 @@
                     });
                 }
                 setTimeout(() => { 
-                    indice++; 
-                    (indice < preguntas.length) ? mostrarPregunta() : finalizar(); 
-                }, 1000);
+                    indiceActual++; 
+                    if (indiceActual < preguntasMezcladas.length) {
+                        mostrarPregunta();
+                    } else {
+                        finalizar();
+                    }
+                }, 800);
             };
             lista.appendChild(b);
         });
@@ -243,15 +251,22 @@
     function finalizar() {
         document.getElementById("juego").classList.add("oculto");
         document.getElementById("pantalla-final").classList.remove("oculto");
-        const total = puntaje * 100;
-        document.getElementById("resultado-final").innerText = total + " Puntos";
-        database.ref('ranking').push({ nombre, pts: total, fecha: Date.now() });
+        document.getElementById("resultado-final").innerText = puntajeTotal + " Puntos";
+        
+        
+        database.ref('ranking').push({ 
+            nombre: nombreUsuario, 
+            pts: puntajeTotal, 
+            fecha: Date.now() 
+        });
+        
         cargarRanking();
     }
 
     function cargarRanking() {
         database.ref('ranking').orderByChild('pts').limitToLast(50).on('value', s => {
-            let arr = []; s.forEach(child => { arr.push(child.val()); });
+            let arr = []; 
+            s.forEach(child => { arr.push(child.val()); });
             arr.sort((a,b) => b.pts - a.pts || a.fecha - b.fecha);
             document.getElementById("lista-ranking").innerHTML = arr.map((r, i) => 
                 `<tr><td>${i+1}</td><td>${r.nombre}</td><td>${r.pts}</td></tr>`).join("");
